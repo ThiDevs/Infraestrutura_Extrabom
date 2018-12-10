@@ -14,7 +14,7 @@ def gerarColunas():
     lst += lst2
     return lst
 
-wb = openpyxl.load_workbook("Resultado.xlsx", read_only=False, data_only=True)
+wb = openpyxl.load_workbook("Resultado.xlsx", read_only=False)
 ws = wb.active
 colunas = gerarColunas()
 
@@ -50,6 +50,6 @@ for i in colunas:
         coluna_tec = i
 
 
-
+wb.save("asdasdasdasd.xlsx")
 wb.close()
 

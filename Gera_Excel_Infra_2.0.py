@@ -1,8 +1,80 @@
 import datetime
 from openpyxl import load_workbook
 from datetime import datetime
+from openpyxl.styles.borders import Border, Side
+from openpyxl.styles import Alignment
+from openpyxl.styles import Color, PatternFill, Font, Border
+from openpyxl.styles import colors
 
 dic = {}
+
+
+def Juncao():
+    wb = load_workbook(filename='Relatorio/Relatorio_InternoVsExterno.xlsx', read_only=False)
+    ws = wb['Dados']
+    dic_newExcel = {}
+    percorre = 200
+    for i in range(2, percorre, 1):
+
+        solicitacoes = str(ws['A' + str(i)].value)
+        tecnico = ws['D' + str(i)].value
+        DentroPrazo = str(ws['J' + str(i)].value).strip()
+        situacao = str(ws['B' + str(i)].value).strip()
+        if situacao == "Fechado":
+            try:
+                lst = dic_newExcel.get(tecnico)[0]
+                lst.append(solicitacoes)
+                prazo = dic_newExcel.get(tecnico)[1]
+
+            except Exception:
+                lst = [solicitacoes]
+                prazo = 0
+
+            if DentroPrazo == "Sim":
+                prazo += 1
+            dic_newExcel.update({tecnico: (lst, prazo)})
+
+    print(dic_newExcel)
+
+    ws_Juntos = wb.create_sheet(title="Junção")
+
+    ft = Font(color=colors.WHITE)
+
+    blackFill = PatternFill(start_color='010204',
+                            end_color='010204',
+                            fill_type='solid')
+
+    lista_names = ['Técnico', 'Total de chamados', 'Dentro do prazo', 'Porcetagem', 'Fora do prazo']
+    ws_Juntos.auto_filter.ref = 'A1:E9'
+    z = 1
+    for name in lista_names:
+        ws_Juntos.cell(row=1, column=z).value = name
+        ws_Juntos.cell(row=1, column=z).font = ft
+        ws_Juntos.cell(row=1, column=z).fill = blackFill
+        z += 1
+
+
+    ws = wb['Informações']
+
+    ws.cell(row=6, column=1).value = "Técnico"
+    ws.cell(row=6, column=2).value = "Solicitações"
+
+    names = ['Paulo Tavares', 'Bruno Soares', 'Romildo Carvalho', 'Aires Mendonça', 'Marcos Aurélio', 'Valcleide Silva', 'Daniel Ferreira',
+             'Julio Pulcher', 'Andre Melo', 'Sandro Geraldino', 'Claudio']
+    q = 0
+    for key in dic_newExcel.keys():
+
+        if key in names[q]:
+            print(key)
+
+        len_soli = len(dic_newExcel.get(key)[0])
+        ws_Juntos.append(
+            [key, len_soli, dic_newExcel.get(key)[1], str(round((dic_newExcel.get(key)[1] * 100) / len_soli)) + " %",
+             len_soli - dic_newExcel.get(key)[1]])
+    q += 1
+
+    wb.save('Relatorio/Relatorio_InternoVsExterno.xlsx')
+    wb.close()
 
 
 def gerarColunas():
@@ -81,26 +153,35 @@ def main():
     arq.close()
 
     from openpyxl import Workbook
-    wb_new = Workbook(write_only=True)
+    wb_new = Workbook()
+    ws_new = wb_new['Sheet']
+    ws_new.title = "Dados"
 
-    ws_new = wb_new.create_sheet(title="Dados")
+    ft = Font(color=colors.WHITE)
+    blackFill = PatternFill(start_color='010204',
+                            end_color='010204',
+                            fill_type='solid')
 
-    ws_new.append(
-        ['Solicitações', 'Situação', 'Localização', 'Técnico', 'Inicio', 'Fim', 'Item', 'SLA', 'SLA Consumido',
-         "Dentro do prazo?"])
+    lista_names = ['Solicitações', 'Situação', 'Localização', 'Técnico', 'Inicio', 'Fim', 'Item', 'SLA',
+                   'SLA Consumido', "Dentro do prazo?"]
+    z = 1
+    for name in lista_names:
+        ws_new.cell(row=1, column=z).value = name
+        ws_new.cell(row=1, column=z).font = ft
+        ws_new.cell(row=1, column=z).fill = blackFill
+        z += 1
 
     wb_new.save("Relatorio/Relatorio_InternoVsExterno.xlsx")
     wb_new.close()
 
     import threading
-    percorre = 10
+    percorre = 50
     for i in range(1, 5, 1):
         T1 = threading.Thread(target=GeraExcel, args=(percorre * i, i, percorre))
         T1.start()
 
 
 Cont = 0
-
 
 
 def GeraExcel(percorre, thread, percorre2):
@@ -183,9 +264,7 @@ def GeraExcel(percorre, thread, percorre2):
                 SLA_Consumido_aux = "00:00"
             SLA_Consumido = SLA_Consumido_aux
             SLA_Consumido_TXT = SLA_Consumido_TXT_aux
-            global NAO
-            global SIM
-            global TOTAL
+            global NAO, SIM, TOTAL
             if SLA_Consumido != "" and int(SLA_Consumido.split(":")[0]) <= int(
                     SLA.split(":")[0]) and SLA_Consumido != "00:00":
 
@@ -226,13 +305,12 @@ def GeraExcel(percorre, thread, percorre2):
         except Exception:
             pass
 
-    print(str(thread) + " thread terminado")
+    print(str(thread) + " thread finalizada")
 
     Finaliza(thread, Lista_Salvar)
 
 
 lst = []
-
 Lista_Salvar2 = []
 
 
@@ -245,17 +323,19 @@ def Finaliza(thread, Lista_Salvar):
     if len(lst) == 4:
         wb_new = load_workbook(filename='Relatorio/Relatorio_InternoVsExterno.xlsx', read_only=False)
         ws_new = wb_new["Dados"]
-        global NAO
-        global SIM
-        global TOTAL
+        global NAO, SIM, TOTAL
 
         for list in Lista_Salvar2:
             ws_new.append(list)
+        ws_new.auto_filter.ref = 'A1:J9'
 
-        from openpyxl.styles import Alignment
-        from openpyxl.styles import Color, PatternFill, Font, Border
-        from openpyxl.styles import colors
-        from openpyxl.cell import Cell
+        dims = {}
+        for row in ws_new.rows:
+            for cell in row:
+                if cell.value:
+                    dims[cell.column] = max((dims.get(cell.column, 0), len(str(cell.value))))
+        for col, value in dims.items():
+            ws_new.column_dimensions[col].width = value
 
         redFill = PatternFill(start_color='e2fe13',
                               end_color='e2c813',
@@ -265,8 +345,7 @@ def Finaliza(thread, Lista_Salvar):
 
         ws_new.merge_cells('A1:H1')
         cell = ws_new.cell(row=1, column=1)
-        from openpyxl.styles.borders import Border, Side
-        from openpyxl import Workbook
+
         cell.value = 'Geral'
         cell.fill = redFill
 
@@ -274,18 +353,18 @@ def Finaliza(thread, Lista_Salvar):
                              right=Side(style='thin'),
                              top=Side(style='thin'),
                              bottom=Side(style='thin'))
-        for i in range(1,9,1):
+        for i in range(1, 9, 1):
             ws_new.cell(row=1, column=i).border = thin_border
             ws_new.cell(row=2, column=i).border = thin_border
         lst2 = ["Total ", "Total Ativos", "Abertos em Dezembro", "Total de solicitações finalizadas",
-                       "Percentual de Atendimento", "Finalizadas dentro do prazo", "Finalizadas fora do prazo",
-                       "Canceladas"]
+                "Percentual de Atendimento", "Finalizadas dentro do prazo", "Finalizadas fora do prazo",
+                "Canceladas"]
         z = 1
         ft = Font(color=colors.WHITE)
 
         blackFill = PatternFill(start_color='010204',
-                              end_color='010204',
-                              fill_type='solid')
+                                end_color='010204',
+                                fill_type='solid')
 
         for name in lst2:
             ws_new.cell(row=2, column=z).value = name
@@ -293,11 +372,11 @@ def Finaliza(thread, Lista_Salvar):
             ws_new.cell(row=2, column=z).fill = blackFill
             z += 1
 
-
         cell.alignment = Alignment(horizontal='center', vertical='center')
 
         ws_new.append(
-            [TOTAL, TOTAL - CANCELADAS, ABERTOS_HJ, SIM + NAO, str(round(((SIM + NAO) * 100) / TOTAL - CANCELADAS)) + " %", SIM,
+            [TOTAL, TOTAL - CANCELADAS, ABERTOS_HJ, SIM + NAO,
+             str(round(((SIM + NAO) * 100) / TOTAL - CANCELADAS)) + " %", SIM,
              NAO, CANCELADAS])
 
         dims = {}
@@ -311,6 +390,8 @@ def Finaliza(thread, Lista_Salvar):
         wb_new.save('Relatorio/Relatorio_InternoVsExterno.xlsx')
         wb_new.close()
         hour2 = str(datetime.now().hour) + ":" + str(datetime.now().minute) + ":" + str(datetime.now().second)
+        Juncao()
+
         calc(hour, hour2)
 
 
