@@ -7,81 +7,30 @@ from openpyxl.styles import Color, PatternFill, Font, Border
 from openpyxl.styles import colors
 
 dic = {}
+
+
 def PadronizaDate(date):
-    date = date.split("-")[0] + "/" + date.split("-")[1] + "/" + date.split("-")[2].split("T")[0] + " " + date.split("T")[1]
+    date = date.split("-")[0] + "/" + date.split("-")[1] + "/" + date.split("-")[2].split("T")[0] + " " + \
+           date.split("T")[1]
     return date
+
 
 def PadronizaDate2(date):
     try:
-        date = date.split("/")[2].split(" ")[0] + "/" +date.split("/")[1] + "/" + date.split("/")[0] + " " + date.split(" ")[1]
+        date = date.split("/")[2].split(" ")[0] + "/" + date.split("/")[1] + "/" + date.split("/")[0] + " " + \
+               date.split(" ")[1]
     except Exception:
         pass
     return date
 
 
-def calcHours(s,t):
+def calcHours(s, t):
     from datetime import datetime
     f = '%Y/%m/%d %H:%M:%S'
     dif = (datetime.strptime(t, f) - datetime.strptime(s, f)).total_seconds()
     # print(dif/60/60)
-    return dif/60/60
+    return dif / 60 / 60
 
-def CalcularSLA():
-    z = 0
-    Dentro_do_Prazo = 0
-
-    for i in range(2, len(ws['B']), 1):  # len(ws['B'])):
-
-        finalizada = str(ws['C' + str(i)].value).strip()
-
-        if finalizada == "Finalizada":
-
-            DataEntrada_classificacao = str(
-                ws['AH' + str(i)].value).strip()  # DATAENTRADACLASSIFICACAO - solicitacao_infraestrutura
-
-            Data_Entrada_AprovarConclusao = PadronizaDate2(str(ws['DS' + str(
-                i)].value).strip())  # Atividade - solicitacao_infraestrutura - Aprovar conclusão - Conclusão
-
-            Item_Sla = str(ws['AE' + str(i)].value).strip().split(":")[0]  # TOTALHOURSSLA - solicitacao_infraestrutura
-
-            if DataEntrada_classificacao != "" and DataEntrada_classificacao != None and DataEntrada_classificacao != " " and DataEntrada_classificacao != "None":
-
-                dataEntrada = PadronizaDate(DataEntrada_classificacao)
-
-                dif = calcHours(dataEntrada + ":00", Data_Entrada_AprovarConclusao)
-
-                if dif >= int(Item_Sla):
-                    pass
-                else:
-                    Dentro_do_Prazo += 1
-
-            else:
-
-                """ Com orgão fiscalizador ativo """
-                DataSaida_Inicio = str(
-                    ws['Q' + str(i)].value).strip()  # Atividade - solicitacao_infraestrutura - Início - Conclusão
-
-                DataSaida_Exec = str(
-                    ws['AL' + str(i)].value).strip()  # DATASAIDAEXECUCAOTEC - solicitacao_infraestrutura
-
-                if DataSaida_Exec != "" and DataSaida_Exec != None and DataSaida_Exec != " " and DataSaida_Exec != "None":
-
-                    dataSaida_Exec = PadronizaDate(DataSaida_Exec) + ":00"
-
-                else:
-                    DataSaida_Exec = str(
-                        ws['AO' + str(i)].value).strip()  # DATASAIDAACOMPANHAMENTO - solicitacao_infraestrutura
-
-                    dataSaida_Exec = PadronizaDate(DataSaida_Exec) + ":00"
-
-                dataSaida_Inicio = PadronizaDate2(DataSaida_Inicio)
-                dif = calcHours(dataSaida_Inicio, dataSaida_Exec)
-
-                if dif >= int(Item_Sla):
-                    pass
-                else:
-                    Dentro_do_Prazo += 1
-            z += 1
 
 def Juncao():
     wb = load_workbook(filename='Relatorio/Relatorio_InternoVsExterno.xlsx', read_only=False)
@@ -107,7 +56,6 @@ def Juncao():
             if DentroPrazo == "Sim":
                 prazo += 1
             dic_newExcel.update({tecnico: (lst, prazo)})
-
 
     ws_Juntos = wb.create_sheet(title="Junção")
 
@@ -164,6 +112,7 @@ def Juncao():
                          right=Side(style='thin'),
                          bottom=Side(style='thin'), top=Side(style='thin'))
 
+
     ws = wb['Informações']
 
     ws.cell(row=6, column=1).value = "Técnicos Civis"
@@ -200,7 +149,7 @@ def Juncao():
     ws.cell(row=linha, column=2).font = ft
     ws.cell(row=linha, column=2).border = thin_border
 
-########################################################################################################################
+    ########################################################################################################################
 
     ws.cell(row=6, column=4).value = "Técnicos Elétrica"
     ws.cell(row=6, column=4).border = thin_border
@@ -240,8 +189,7 @@ def Juncao():
     ws.cell(row=linha, column=5).font = ft
     ws.cell(row=linha, column=5).border = thin_border
 
-
-########################################################################################################################
+    ########################################################################################################################
 
     ws.cell(row=6, column=7).value = "Técnicos Mecânica"
     ws.cell(row=6, column=7).border = thin_border
@@ -281,6 +229,48 @@ def Juncao():
     ws.cell(row=linha, column=8).font = ft
     ws.cell(row=linha, column=8).border = thin_border
 
+    """""""""""""""""""""""""""
+    Chamados Abertos
+    """""
+    redFill = PatternFill(start_color='e2fe13', end_color='e2c813',
+                          fill_type='solid')
+    ws_new = wb.create_sheet(title="Chamados Abertos")
+
+    ws_new.merge_cells('A1:H1')
+    cell = ws_new.cell(row=1, column=1)
+    cell.value = 'Chamados Abertos'
+    cell.fill = redFill
+
+    thin_border = Border(left=Side(style='thin'),
+                         right=Side(style='thin'),
+                         top=Side(style='thin'),
+                         bottom=Side(style='thin'))
+    for i in range(1, 9, 1):
+        ws_new.cell(row=1, column=i).border = thin_border
+        ws_new.cell(row=2, column=i).border = thin_border
+    lst2 = ["Solicitações ", "Situação", "Localização", "Técnico", "Loja", "Inicio", "Descrição",
+            "Item"]
+    z = 1
+    ft = Font(color=colors.WHITE)
+
+    blackFill = PatternFill(start_color='010204',
+                            end_color='010204',
+                            fill_type='solid')
+
+    for name in lst2:
+        ws_new.cell(row=2, column=z).value = name
+        ws_new.cell(row=2, column=z).font = ft
+        ws_new.cell(row=2, column=z).fill = blackFill
+        z += 1
+
+    cell.alignment = Alignment(horizontal='center', vertical='center')
+
+
+
+
+
+
+
 
     wb.save('Relatorio/Relatorio_InternoVsExterno.xlsx')
     wb.close()
@@ -293,7 +283,7 @@ def gerarColunas():
     for i in a:
         lst.append(i)
     lst2 = []
-    for j in range(4):
+    for j in range(5):
         for i in a:
             lst2.append(lst[j] + i)
     lst += lst2
@@ -323,50 +313,64 @@ ws = wb['Resultado da consulta de solici']
 colunas = gerarColunas()
 
 for i in colunas:
-    if ws[i + "1"].value == "Solicitação":
+    coluna = ws[i + "1"]
+    if coluna.value == "Solicitação":
         coluna_solicitacao = i
 
-    elif ws[i + "1"].value == "Situação":
+    elif coluna.value == "Situação":
         coluna_situacao = i
 
-    elif ws[i + "1"].value == "Localização":
+    elif coluna.value == "Localização":
         coluna_localizacao = i
 
-    elif ws[i + "1"].value == "Início":
+    elif coluna.value == "Início":
         coluna_inicio = i
 
-    elif ws[i + "1"].value == "Fim":
+    elif coluna.value == "Fim":
         coluna_fim = i
 
-    elif ws[i + "1"].value == "SLACONSUMIDOEXECUCAOTEC - solicitacao_infraestrutura":
+    elif coluna.value == "SLACONSUMIDOEXECUCAOTEC - solicitacao_infraestrutura":
         coluna_slaexe = i
 
-    elif ws[i + "1"].value == "SLACONSUMIDOACOMPANHAMENTO - solicitacao_infraestrutura":
+    elif coluna.value == "SLACONSUMIDOACOMPANHAMENTO - solicitacao_infraestrutura":
         coluna_slaacom = i
 
-    elif ws[i + "1"].value == "DESCRICAOITEM - solicitacao_infraestrutura":
+    elif coluna.value == "DESCRICAOITEM - solicitacao_infraestrutura":
         coluna_item = i
 
-    elif ws[i + "1"].value == "TOTALHOURSSLA - solicitacao_infraestrutura":
+    elif coluna.value == "TOTALHOURSSLA - solicitacao_infraestrutura":
         coluna_sla = i
 
-    elif ws[i + "1"].value == "CODIGOTECNICO - solicitacao_infraestrutura":
+    elif coluna.value == "CODIGOTECNICO - solicitacao_infraestrutura":
         coluna_tec = i
 
-    elif ws[i + "1"].value == "Atividade - solicitacao_infraestrutura - Aprovar conclusão - Conclusão":
+    elif coluna.value == "Atividade - solicitacao_infraestrutura - Aprovar conclusão - Conclusão":
         coluna_AprovarConclusao = i
 
-    elif ws[i + "1"].value == "DATAENTRADACLASSIFICACAO - solicitacao_infraestrutura":
+    elif coluna.value == "DATAENTRADACLASSIFICACAO - solicitacao_infraestrutura":
         coluna_Classificacao = i
 
-    elif ws[i + "1"].value == "Atividade - solicitacao_infraestrutura - Início - Conclusão":
-        coluna_inicioConclusao = i
+    elif coluna.value == "Atividade - solicitacao_infraestrutura - Início - Conclusão":
+        if "E" not in i:
+            coluna_inicioConclusao = i
 
-    elif ws[i + "1"].value == "DATASAIDAEXECUCAOTEC - solicitacao_infraestrutura":
+    elif coluna.value == "DATASAIDAEXECUCAOTEC - solicitacao_infraestrutura":
         coluna_SaidaExecTec = i
 
-    elif ws[i + "1"].value == "DATASAIDAACOMPANHAMENTO - solicitacao_infraestrutura":
+    elif coluna.value == "DATASAIDAACOMPANHAMENTO - solicitacao_infraestrutura":
         coluna_SaidaAcompanhamento = i
+
+    elif coluna.value == "Atividade - solicitacao_infraestrutura - Execução 2º técnico? - Conclusão":
+        coluna_Exec2tec = i
+
+    elif coluna.value == "DESCRICAO - solicitacao_infraestrutura":
+        coluna_Descri = i
+
+    elif coluna.value == "RADIOAPROVREJ - solicitacao_infraestrutura":
+        coluna_Rejeitado = i
+
+    elif coluna.value == "Atividade - solicitacao_infraestrutura - Aprovação? - Conclusão":
+        coluna_Aprovacao = i
 
 
 def main():
@@ -387,7 +391,7 @@ def main():
                             fill_type='solid')
 
     lista_names = ['Solicitações', 'Situação', 'Localização', 'Técnico', 'Inicio', 'Fim', 'Item', 'SLA',
-                   'SLA Consumido', "Dentro do prazo?"]
+                   'SLA Consumido', "Dentro do prazo?", "Inicio contador SLA", "Fim contador SLA"]
     z = 1
     for name in lista_names:
         ws_new.cell(row=1, column=z).value = name
@@ -400,11 +404,9 @@ def main():
 
     import threading
     percorre = 20
-    for i in range(1, 5, 1):
+    for i in range(1, 4, 1):
         T1 = threading.Thread(target=GeraExcel, args=(percorre * i, i, percorre))
         T1.start()
-
-
 
 
 Cont = 0
@@ -420,140 +422,160 @@ def GeraExcel(percorre, thread, percorre2):
         j = percorre - percorre2
     for i in range(j, percorre, 1):
 
-
         global CANCELADAS, APROVAR, ABERTOS_HJ, NAO, SIM, TOTAL
         solicitacoes = str(int(ws[coluna_solicitacao + str(i)].value)).strip()
 
-        localizacao = str(ws[coluna_localizacao + str(i)].value).strip()
-        if localizacao == "Classificação" or localizacao == "Acompanhamento da Execução" or localizacao == "Acompanharmento da Execução" or localizacao == "Execução da Solicitação":
-            situacao = "Em aberto"
-        elif localizacao == "Aprovar":
-            situacao = "Aprovação"
-            APROVAR += 1
-        elif localizacao == "Cancelada":
-            situacao = "Cancelada"
-            CANCELADAS += 1
-        else:
-            situacao = "Fechado"
+        if solicitacoes != "":
+            print(thread, solicitacoes)
+            localizacao = str(ws[coluna_localizacao + str(i)].value).strip()
+            if localizacao == "Classificação" or localizacao == "Acompanhamento da Execução" or localizacao == "Acompanharmento da Execução" or localizacao == "Execução da Solicitação" or localizacao == "Analise?":
+                situacao = "Em aberto"
+            elif localizacao == "Aprovar":
+                situacao = "Aprovação"
+                APROVAR += 1
+            elif localizacao == "Cancelada":
+                situacao = "Cancelada"
+                CANCELADAS += 1
+            else:
+                situacao = "Fechado"
 
-        try:
-            tecnico = dic[ws[coluna_tec + str(i)].value]
-        except Exception:
-            tecnico = ws[coluna_tec + str(i)].value
+            try:
+                tecnico = dic[ws[coluna_tec + str(i)].value]
+            except Exception:
+                tecnico = ws[coluna_tec + str(i)].value
 
-        item = ws[coluna_item + str(i)].value
-        SLA = ws[coluna_sla + str(i)].value
-        inicio = ws[coluna_inicio + str(i)].value
-        if inicio.split("/")[1] == "12":
-            ABERTOS_HJ += 1
+            item = ws[coluna_item + str(i)].value
+            SLA = ws[coluna_sla + str(i)].value
+            inicio = ws[coluna_inicio + str(i)].value
+            if inicio.split("/")[1] == "10":
+                ABERTOS_HJ += 1
 
-        fim = ws[coluna_fim + str(i)].value
+            if situacao == "Fechado":
+                rejei = ""
+                DataEntrada_classificacao = str(
+                    ws[coluna_Classificacao + str(
+                        i)].value).strip()  # DATAENTRADACLASSIFICACAO - solicitacao_infraestrutura
 
-        Dentro_do_Prazo = 0
+                Data_Entrada_AprovarConclusao = PadronizaDate2(str(ws[coluna_AprovarConclusao + str(
+                    i)].value).strip())  # Atividade - solicitacao_infraestrutura - Aprovar conclusão - Conclusão
 
-        finalizada = str(ws['C' + str(i)].value).strip()
+                Item_Sla = str(ws[coluna_sla + str(i)].value).strip().split(":")[
+                    0]  # TOTALHOURSSLA - solicitacao_infraestrutura
 
-        if situacao == "Fechado":
+                if DataEntrada_classificacao != "" and DataEntrada_classificacao is not None and DataEntrada_classificacao != " " and DataEntrada_classificacao != "None":
 
+                    dataEntrada = PadronizaDate(DataEntrada_classificacao)
 
-            DataEntrada_classificacao = str(
-                ws[coluna_Classificacao + str(i)].value).strip()  # DATAENTRADACLASSIFICACAO - solicitacao_infraestrutura
+                    if Data_Entrada_AprovarConclusao != "" and Data_Entrada_AprovarConclusao is not None and Data_Entrada_AprovarConclusao != "None":
+                        dif = calcHours(dataEntrada + ":00", Data_Entrada_AprovarConclusao)
 
-            Data_Entrada_AprovarConclusao = PadronizaDate2(str(ws[coluna_AprovarConclusao + str(i)].value).strip())  # Atividade - solicitacao_infraestrutura - Aprovar conclusão - Conclusão
-
-
-            Item_Sla = str(ws[coluna_sla + str(i)].value).strip().split(":")[
-                0]  # TOTALHOURSSLA - solicitacao_infraestrutura
-
-            if DataEntrada_classificacao != "" and DataEntrada_classificacao != None and DataEntrada_classificacao != " " and DataEntrada_classificacao != "None":
-
-                dataEntrada = PadronizaDate(DataEntrada_classificacao)
-                if Data_Entrada_AprovarConclusao != "" and Data_Entrada_AprovarConclusao!= None and Data_Entrada_AprovarConclusao!= "None":
-                    dif = calcHours(dataEntrada + ":00", Data_Entrada_AprovarConclusao)
-                else:
-
-                    try:
-                        Data_Entrada_AprovarConclusao = PadronizaDate(ws[coluna_SaidaExecTec + str(i)].value)
+                    else:
                         try:
-                            if Data_Entrada_AprovarConclusao < PadronizaDate(str(ws[coluna_SaidaAcompanhamento + str(i)].value).strip()):
-                                Data_Entrada_AprovarConclusao = PadronizaDate(str(ws[coluna_SaidaAcompanhamento + str(i)].value).strip())
+                            Data_Entrada_AprovarConclusao = PadronizaDate(ws[coluna_SaidaExecTec + str(i)].value)
+                            try:
+                                if Data_Entrada_AprovarConclusao < PadronizaDate(str(ws[coluna_SaidaAcompanhamento + str(i)].value).strip()):
+                                    Data_Entrada_AprovarConclusao = PadronizaDate(
+                                        str(ws[coluna_SaidaAcompanhamento + str(i)].value).strip())
+                            except Exception:
+                                pass
 
+                        except Exception:
+                            try:
+                                Data_Entrada_AprovarConclusao = PadronizaDate(ws[coluna_SaidaAcompanhamento + str(i)].value)
+                            except Exception:
+                                rejei = "rejeitada"
+
+                        dif = round(calcHours(dataEntrada + ":00", Data_Entrada_AprovarConclusao + ":00"), 2)
+                        Data_Entrada_AprovarConclusao += ":00"
+                        if dif <= 0:
+                            try:
+                                Data_Entrada_AprovarConclusao = str(ws[coluna_Exec2tec + str(i)].value).strip()
+                                print(dataEntrada,Data_Entrada_AprovarConclusao)
+                                dif = round(calcHours(dataEntrada + ":00", PadronizaDate2(Data_Entrada_AprovarConclusao)), 2)
+                            except Exception:
+                                rejei = str(ws[coluna_Rejeitado + str(i)].value).strip()
+                    if rejei != "rejeitada":
+                        if dif >= int(Item_Sla):
+                            dif = str(dif).split(".")[0] + ":" + str(round(float("0." + str(dif).split(".")[1]) * 60))
+                            Lista_Salvar.append([solicitacoes, situacao, localizacao, tecnico, inicio, item, SLA, dif,
+                                                 "Não", dataEntrada + ":00", Data_Entrada_AprovarConclusao])
+                            NAO += 1
+                        else:
+                            dif = str(dif).split(".")[0] + ":" + str(round(float("0." + str(dif).split(".")[1]) * 60))
+                            Lista_Salvar.append(
+                                [solicitacoes, situacao, localizacao, tecnico, inicio, item, SLA, dif,
+                                 "Sim", dataEntrada + ":00", Data_Entrada_AprovarConclusao])
+                            SIM += 1
+                    else:
+                        Lista_Salvar.append(
+                            [solicitacoes, situacao, localizacao, tecnico, inicio, item, SLA, "-",
+                             "-", "-", "-"])
+
+                else:
+                    """ Com orgão fiscalizador ativo """
+                    DataSaida_Inicio = str(
+                        ws[coluna_inicioConclusao + str(
+                            i)].value).strip()  # Atividade - solicitacao_infraestrutura - Início - Conclusão
+
+                    DataSaida_Exec = str(
+                        ws[coluna_SaidaExecTec + str(i)].value).strip()  # DATASAIDAEXECUCAOTEC - solicitacao_infraestrutura
+
+                    if DataSaida_Exec != "" and DataSaida_Exec != None and DataSaida_Exec != " " and DataSaida_Exec != "None":
+
+                        dataSaida_Exec = PadronizaDate(DataSaida_Exec) + ":00"
+                        try:
+                            if dataSaida_Exec < PadronizaDate(str(ws[coluna_SaidaAcompanhamento + str(i)].value).strip()):
+                                dataSaida_Exec = PadronizaDate(str(ws[coluna_SaidaAcompanhamento + str(i)].value).strip())
                         except Exception:
                             pass
 
+                    else:
+                        try:
+                            DataSaida_Exec = str(
+                                ws[coluna_SaidaAcompanhamento + str(
+                                    i)].value).strip()  # DATASAIDAACOMPANHAMENTO - solicitacao_infraestrutura
+                            dataSaida_Exec = PadronizaDate(DataSaida_Exec) + ":00"
+                        except Exception:
+                            rejei = str(ws[coluna_Rejeitado + str(i)].value).strip()
 
-                    except Exception:
-                       Data_Entrada_AprovarConclusao = PadronizaDate(ws[coluna_SaidaAcompanhamento + str(i)].value)
+                        try:
+                            if dataSaida_Exec < PadronizaDate(str(ws[coluna_SaidaExecTec + str(i)].value).strip()):
+                                dataSaida_Exec = PadronizaDate(str(ws[coluna_SaidaExecTec + str(i)].value).strip())
+                        except Exception:
+                            pass
 
-                    dif = round(calcHours(dataEntrada + ":00", Data_Entrada_AprovarConclusao + ":00"),2)
-                print(dif)
-                if dif >= int(Item_Sla):
-                    dif = str(dif).split(".")[0] + ":" + str(round(float("0."+str(dif).split(".")[1]) * 60))
-                    Lista_Salvar.append([solicitacoes, situacao, localizacao, tecnico, inicio, fim, item, SLA, dif,
-                         "Não"])
-                    NAO += 1
-                else:
-                    dif = str(dif).split(".")[0] + ":" + str(round(float("0." + str(dif).split(".")[1]) * 60))
-                    Lista_Salvar.append(
-                        [solicitacoes, situacao, localizacao, tecnico, inicio, fim, item, SLA, dif,
-                         "Sim"])
-                    SIM += 1
+                    if rejei != "rejeitada":
+                        dataSaida_Inicio = PadronizaDate2(DataSaida_Inicio)
+                        if dataSaida_Inicio != "None" and dataSaida_Inicio != None and dataSaida_Inicio != "":
+                            dif = round(calcHours(dataSaida_Inicio, dataSaida_Exec), 2)
+                        else:
+                            dataSaida_Inicio = str(ws[coluna_Aprovacao + str(i)].value).strip()
+                            dif = round(calcHours(PadronizaDate2(dataSaida_Inicio), dataSaida_Exec), 2)
 
-                    Dentro_do_Prazo += 1
+
+                        if dif >= int(Item_Sla):
+                            dif = str(dif).split(".")[0] + ":" + str(round(float("0." + str(dif).split(".")[1]) * 60))
+                            Lista_Salvar.append(
+                                [solicitacoes, situacao, localizacao, tecnico, inicio, item, SLA, dif,
+                                 "Não", dataSaida_Inicio, dataSaida_Exec])
+                            NAO += 1
+                        else:
+                            dif = str(dif).split(".")[0] + ":" + str(round(float("0." + str(dif).split(".")[1]) * 60))
+                            Lista_Salvar.append(
+                                [solicitacoes, situacao, localizacao, tecnico, inicio, item, SLA, dif,
+                                 "Sim", dataSaida_Inicio, dataSaida_Exec])
+                            SIM += 1
+                    else:
+                        Lista_Salvar.append(
+                            [solicitacoes, situacao, localizacao, tecnico, inicio, item, SLA, "-",
+                             "-", "-", "-"])
 
             else:
+                Lista_Salvar.append(
+                    [solicitacoes, situacao, localizacao, tecnico, inicio, item, SLA, "-",
+                     "-", "-", "-"])
 
-                """ Com orgão fiscalizador ativo """
-                DataSaida_Inicio = str(
-                    ws[coluna_inicioConclusao + str(i)].value).strip()  # Atividade - solicitacao_infraestrutura - Início - Conclusão
-
-                DataSaida_Exec = str(
-                    ws[coluna_SaidaExecTec + str(i)].value).strip()  # DATASAIDAEXECUCAOTEC - solicitacao_infraestrutura
-
-                if DataSaida_Exec != "" and DataSaida_Exec != None and DataSaida_Exec != " " and DataSaida_Exec != "None":
-
-                    dataSaida_Exec = PadronizaDate(DataSaida_Exec) + ":00"
-                    try:
-                        if dataSaida_Exec < PadronizaDate(str(ws[coluna_SaidaAcompanhamento + str(i)].value).strip()):
-                            dataSaida_Exec = PadronizaDate(str(ws[coluna_SaidaAcompanhamento + str(i)].value).strip())
-                    except Exception:
-                        pass
-
-
-                else:
-
-                    DataSaida_Exec = str(
-                        ws[coluna_SaidaAcompanhamento + str(i)].value).strip()  # DATASAIDAACOMPANHAMENTO - solicitacao_infraestrutura
-                    dataSaida_Exec = PadronizaDate(DataSaida_Exec) + ":00"
-                    if dataSaida_Exec < PadronizaDate(str(ws[coluna_SaidaExecTec + str(i)].value).strip()):
-                        dataSaida_Exec = PadronizaDate(str(ws[coluna_SaidaExecTec + str(i)].value).strip())
-
-                dataSaida_Inicio = PadronizaDate2(DataSaida_Inicio)
-                dif = round(calcHours(dataSaida_Inicio, dataSaida_Exec),2)
-
-                print(dif)
-                if dif >= int(Item_Sla):
-                    dif = str(dif).split(".")[0] + ":" + str(round(float("0." + str(dif).split(".")[1]) * 60))
-                    Lista_Salvar.append(
-                        [solicitacoes, situacao, localizacao, tecnico, inicio, fim, item, SLA, dif,
-                         "Não"])
-                    NAO += 1
-                else:
-                    dif = str(dif).split(".")[0] + ":" + str(round(float("0." + str(dif).split(".")[1]) * 60))
-                    Lista_Salvar.append(
-                        [solicitacoes, situacao, localizacao, tecnico, inicio, fim, item, SLA, dif,
-                         "Sim"])
-                    SIM += 1
-                    Dentro_do_Prazo += 1
-        else:
-            Lista_Salvar.append(
-                [solicitacoes, situacao, localizacao, tecnico, inicio, fim, item, SLA, "-",
-                 "-"])
-
-        TOTAL += 1
-
-
-
+            TOTAL += 1
 
     print(str(thread) + " thread finalizada")
 
@@ -570,7 +592,7 @@ def Finaliza(thread, Lista_Salvar):
 
     Lista_Salvar2 += Lista_Salvar
 
-    if len(lst) == 4:
+    if len(lst) == 3:
         wb_new = load_workbook(filename='Relatorio/Relatorio_InternoVsExterno.xlsx', read_only=False)
         ws_new = wb_new["Dados"]
         global NAO, SIM, TOTAL
